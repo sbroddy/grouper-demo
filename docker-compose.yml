@@ -87,7 +87,43 @@ services:
       GROUPER_DATABASE_PASSWORD: "grouper"
       GROUPER_MORPHSTRING_ENCRYPT_KEY: "THISISSUPERSECRET!"
       GROUPER_AUTO_DDL_UPTOVERSION: "v5.*.*"
-
+  ad:
+    build:
+      context: ./ad/
+    cap_add:
+      - CAP_SYS_ADMIN
+    healthcheck:
+      test: netstat -an | grep :3268 | grep LISTEN
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    environment:
+     - DOMAIN=ad.test.local
+     - DOMAINPASS=password
+    hostname: dc1
+    networks:
+      grouper:
+        aliases:
+          - dc1.ad.test.local
+    volumes:
+     - ad_samba_data:/var/lib/samba
+     - ad_samba_cfg:/etc/samba/external
+    expose:
+      - 445
+    ports:
+      - 53:53
+      - 53:53/udp
+      - 88:88
+      - 88:88/udp
+      - 135:135
+      - 137-138:137-138/udp
+      - 139:139
+      - 389:389
+      - 1389:389/udp
+      - 464:464
+      - 464:464/udp
+      - 1636:636
+      - 3268-3269:3268-3269
 
 networks:
   grouper:
@@ -97,6 +133,10 @@ volumes:
   directory_data:
     driver: local
   directory_config:
+    driver: local
+  ad_samba_data:
+    driver: local
+  ad_samba_cfg:
     driver: local
 #secrets:
 
