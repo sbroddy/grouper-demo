@@ -1,0 +1,102 @@
+version: '3.8'
+services:
+  directory:
+    build: ./directory
+    networks:
+     - grouper
+    ports:
+    - 389:389
+    - 636:636
+    volumes:
+    - directory_data:/var/lib/ldap
+    - directory_config:/etc/ldap/slapd.d
+    - ./directory/certs:/container/service/slapd/assets/certs
+    environment:
+      LDAP_BASE_DN: "dc=test,dc=local"
+      LDAP_DOMAIN: "test.local"
+#      HOSTNAME: "directory"
+      LDAP_TLS_VERIFY_CLIENT: "try"
+  database:
+    image: postgres:12.3
+    command: postgres -N 500
+    networks:
+      - grouper
+    ports:
+    - "5432:5432"
+    volumes:
+    - ./database/initdb.d/:/docker-entrypoint-initdb.d/
+    - ./database/data/:/tmp/pdata/
+    - database_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=supersecret
+  grouper-ui:
+    build: ./grouper
+    command: ui
+    depends_on:
+      - database
+      - directory
+    networks:
+      - grouper
+    ports:
+    - "80:80"
+    - "8080:8080"
+    - "443:443"
+    - "8443:8443"
+    volumes:
+      - ./grouper/src/main/docker/slashRoot/opt/grouper/grouperWebapp/WEB-INF/classes/log4j.properties.sample:/opt/grouper/grouperWebapp/WEB-INF/classes/log4j.properties
+      - ./grouper/src/main/docker/slashRoot/opt/grouper/grouperWebapp/WEB-INF/classes/grouper.hibernate.properties.sample:/opt/grouper/grouperWebapp/WEB-INF/classes/grouper.hibernate.properties
+    environment:
+      GROUPER_DATABASE_URL: "jdbc:postgresql://database/grouper"
+      GROUPER_DATABASE_USERNAME: "grouper"
+      GROUPER_DATABASE_PASSWORD: "grouper"
+      GROUPER_MORPHSTRING_ENCRYPT_KEY: "THISISSUPERSECRET!"
+      GROUPER_AUTO_DDL_UPTOVERSION: "v5.*.*"
+      GROUPER_RUN_TOMCAT_NOT_SUPERVISOR: "true"
+      GROUPER_UI_CONFIGURATION_EDITOR_SOURCEIPADDRESSES: "0.0.0.0/0"
+      GROUPER_UI_GROUPER_AUTH: "true"
+      GROUPERSYSTEM_QUICKSTART_PASS: "password"
+      RUN_SHIB_SP: "false"
+#   grouper-ws:
+#     build: ./grouper
+#     command: ws
+#     depends_on:
+#       - database
+#       - directory
+#     networks:
+#       - grouper
+#     environment:
+#       GROUPER_DATABASE_URL: "jdbc:postgresql://database/grouper"
+#       GROUPER_DATABASE_USERNAME: "grouper"
+#       GROUPER_DATABASE_PASSWORD: "grouper"
+#       GROUPER_MORPHSTRING_ENCRYPT_KEY: "THISISSUPERSECRET!"
+#       GROUPER_AUTO_DDL_UPTOVERSION: "v2.5.*"
+#       GROUPER_RUN_TOMCAT_NOT_SUPERVISOR: "true"
+#       RUN_SHIB_SP: "false"
+#       GROUPER_WS_GROUPER_AUTH: "true"
+  grouper-daemon:
+    build: ./grouper
+    command: daemon
+    depends_on:
+      - database
+      - directory
+    networks:
+      - grouper
+    environment:
+      GROUPER_DATABASE_URL: "jdbc:postgresql://database/grouper"
+      GROUPER_DATABASE_USERNAME: "grouper"
+      GROUPER_DATABASE_PASSWORD: "grouper"
+      GROUPER_MORPHSTRING_ENCRYPT_KEY: "THISISSUPERSECRET!"
+      GROUPER_AUTO_DDL_UPTOVERSION: "v5.*.*"
+
+
+networks:
+  grouper:
+volumes:
+  database_data:
+    driver: local
+  directory_data:
+    driver: local
+  directory_config:
+    driver: local
+#secrets:
+
