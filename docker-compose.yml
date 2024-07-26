@@ -99,7 +99,7 @@ services:
       retries: 3
     environment:
      - DOMAIN=ad.test.local
-     - DOMAINPASS=password
+     - DOMAINPASS=Password1
     hostname: dc1
     networks:
       grouper:
@@ -111,14 +111,14 @@ services:
     expose:
       - 445
     ports:
-      - 53:53
-      - 53:53/udp
+      - 153:53
+      - 153:53/udp
       - 88:88
       - 88:88/udp
       - 135:135
       - 137-138:137-138/udp
       - 139:139
-      - 389:389
+      - 1389:389
       - 1389:389/udp
       - 464:464
       - 464:464/udp
